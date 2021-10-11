@@ -1,6 +1,7 @@
 package com.heshan.noteapp;
 
 import android.content.Context;
+import android.os.AsyncTask;
 
 import androidx.annotation.NonNull;
 import androidx.core.content.ContextCompat;
@@ -22,10 +23,34 @@ public abstract class NoteDatabase extends RoomDatabase {
             instance = Room.databaseBuilder(context.getApplicationContext(),
                     NoteDatabase.class, "note_database")
                     .fallbackToDestructiveMigration()
+                    .addCallback(roomCallback)
                     .build();
         }
         return instance;
     }
 
+    private static RoomDatabase.Callback roomCallback = new RoomDatabase.Callback() {
+        @Override
+        public void onCreate(@NonNull SupportSQLiteDatabase db) {
+            super.onCreate(db);
+            new PopulateDbAsyncTask(instance).execute();
+        }
+    };
+
+    public static class PopulateDbAsyncTask extends AsyncTask<Void, Void, Void> {
+        private NoteDao noteDao;
+
+        private PopulateDbAsyncTask(NoteDatabase db) {
+            noteDao = db.noteDao();
+        }
+
+        @Override
+        protected Void doInBackground(Void... voids) {
+            noteDao.insert(new Note("Title 1", "Description1", 1));
+            noteDao.insert(new Note("Title 2", "Description2", 2));
+            noteDao.insert(new Note("Title 3", "Description3", 3));
+            return null;
+        }
+    }
 
 }
